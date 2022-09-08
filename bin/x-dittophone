@@ -1,0 +1,63 @@
+#!/bin/sh -e
+#L:
+#L:  MIT License
+#L:  
+#l:  Bug reports, feature requests to gemini|https://harkadev.com/oss
+#l:  Copyright (c) 2022 Harkaitz Agirre, harkaitz.aguirre@gmail.com
+#L:
+#L:  Permission is hereby granted, free of charge, to any person obtaining
+#L:  a copy of this software and associated documentation files (the
+#L:  "Software"), to deal in the Software without restriction, including
+#L:  without limitation the rights to use, copy, modify, merge, publish,
+#L:  distribute, sublicense, and/or sell copies of the Software, and to
+#L:  permit persons to whom the Software is furnished to do so, subject to
+#L:  the following conditions:
+#L:
+#L:  The above copyright notice and this permission notice shall be
+#L:  included in all copies or substantial portions of the Software.
+#L:
+#L:  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+#L:  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+#L:  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+#L:  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+#L:  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+#L:  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+#L:  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+##:
+#h: Usage: $0
+#h:
+#h: Resize the selected window by `xwinsel(1)` so that it looks like
+#h: a phone.
+##:
+. hmain
+. ratio2size
+x_dittophone() {
+    local OPTIND optopt size x y
+    while getopts "w:" optopt; do
+        case $optopt in
+            w)  local WINID="${OPTARG}";;
+            \?) return 1;;
+        esac
+    done
+    shift $(( $OPTIND - 1 ))
+    if test ! -n "${WINID}"; then
+        local WINID="`xdotool selectwindow || true`"
+        test -n "${WINID}"
+    fi
+    size="`ratio2size 9:16`"
+    test -n "${size}"
+    x="`echo "${size}" | cut -d x -f 1`"
+    y="`echo "${size}" | cut -d x -f 2`"
+    wmctrl -ia "${WINID}"
+    if which i3-msg >/dev/null 2>&1; then
+        i3-msg fullscreen disable > /dev/null
+        i3-msg floating enable > /dev/null
+        i3-msg move position center > /dev/null
+    fi
+    xdotool windowsize "${WINID}" "${x}" "${y}"
+}
+## ------------------------------------------------------------------------
+hmain -f "x-dittophone" \
+      -r "xdotool"      \
+      -r "wmctrl"       \
+      -e x_dittophone

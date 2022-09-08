@@ -1,0 +1,120 @@
+#!/bin/sh -e
+#L:
+#L:  MIT License
+#L:  
+#l:  Bug reports, feature requests to gemini|https://harkadev.com/oss
+#l:  Copyright (c) 2022 Harkaitz Agirre, harkaitz.aguirre@gmail.com
+#L:
+#L:  Permission is hereby granted, free of charge, to any person obtaining
+#L:  a copy of this software and associated documentation files (the
+#L:  "Software"), to deal in the Software without restriction, including
+#L:  without limitation the rights to use, copy, modify, merge, publish,
+#L:  distribute, sublicense, and/or sell copies of the Software, and to
+#L:  permit persons to whom the Software is furnished to do so, subject to
+#L:  the following conditions:
+#L:
+#L:  The above copyright notice and this permission notice shall be
+#L:  included in all copies or substantial portions of the Software.
+#L:
+#L:  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+#L:  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+#L:  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+#L:  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+#L:  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+#L:  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+#L:  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+##:
+#h: Usage: xshot [-n NAME][-l][-r][-i|v[a]
+#h:                   |    |   |   | | '------- With Audio
+#h:    Name the captures   |   |   | '------- Record video
+#h:                        |   |   '------- Take an screenshot
+#h:       List captures ---'   '--------- Remove all captures with NAME
+#h:
+#h: Take a screenshot of a window selected by `xwinsel(1)` and
+#h: save to screenshot directory.
+##:
+. hlog
+. hmain
+. xwinsel
+. vid2gif
+xshot() {
+    ## Parse options.
+    local OPTIND optopt n l t f='' name='xshot' list='' remove='' fmt='' no_sound='y'
+    while getopts "n:lriva" optopt; do
+        case $optopt in
+            n)  name="${OPTARG}";;
+            l)  list=y;;
+            r)  remove=y;;
+            i)  fmt=".png";;
+            v)  fmt=".gif";;
+            a)  no_sound="";;
+            \?) return 1;;
+        esac
+    done
+    shift $(( $OPTIND - 1 ))
+    ## List files.
+    if test -n "${list}"; then
+        find . -iname "${name}*${fmt}"
+        return 0
+    elif test -n "${remove}"; then
+        find . -iname "${name}*${fmt}" -exec rm -i '{}' ';'
+        return 0
+    elif test ! -n "${fmt}"; then
+        return 0
+    fi
+    ## Select a window.
+    if test ! -n "${WINID}"; then
+        xwinsel
+        test -n "${WINID}"
+    fi
+    ## Calculate filename
+    for n in `seq 1 99 | xargs -L 1 printf '%s-%02i\n' "${name}"`; do
+        if test ! -f "${n}${fmt}"; then
+            f="${n}${fmt}"
+            break
+        fi
+    done
+    test -n "${f}"
+    ## Take screenshot.
+    case "${f}" in
+        *.png) t="`mktemp -u`.xwd"
+               xdotool mousemove --window "${WINID}" 200 200
+               find-cursor -c blue
+               sleep 3
+               xwd -nobdrs -out "${t}" -id "${WINID}" >&2
+               find-cursor -c red
+               convert "${t}" "${f}"
+               echo "${f}"
+               ;;
+        *.gif) t="`mktemp -u`.ogv"
+               xdotool mousemove --window "${WINID}" 200 200
+               l="`xmenu <<-EOF
+		Start recording (CTRL-c) to finish.	start
+		Abort.	abort
+		EOF`"
+               if test @"${l}" = @"abort"; then
+                   return 0
+               fi
+               recordmydesktop \
+                   --windowid "${WINID}" \
+                   --stop-shortcut "Control+c" \
+                   ${no_sound:+ --no-sound} \
+                   -o "${t}"
+               vid2gif -o "${f}" -- "${t}"
+               echo "${f}"
+               ;;
+    esac
+    
+
+    
+}
+## -----------------------------------------------------------------------------
+hmain -f "xshot"       \
+      -r "wmctrl"      \
+      -r "xwd"         \
+      -r "xdotool"     \
+      -r "find-cursor" \
+      -r "xmenu"       \
+      -r "mktemp"      \
+      xshot            \
+      "$@"
