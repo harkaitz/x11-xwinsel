@@ -1,3 +1,4 @@
+PREFIX=/usr/local
 ## -- license --
 ifneq ($(PREFIX),)
 install: install-license
