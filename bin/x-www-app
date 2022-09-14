@@ -35,7 +35,7 @@
 ##:
 . hmain
 x_www_app() {
-    local OPTIND optopt url browser=s WWW_APP_FORK=''
+    local OPTIND optopt url browser=s WWW_APP_FORK='' surf_args=""
     while getopts "sgfF" optopt; do
         case $optopt in
             s)  browser=s;;
@@ -46,22 +46,34 @@ x_www_app() {
         esac
     done
     shift $(( $OPTIND - 1 ))
+    if true; then # cache.
+        surf_args="${surf_args} -D"
+    else
+        surf_args="${surf_args} -d"
+    fi
+    if true; then # inspector
+        surf_args="${surf_args} -N"
+    else
+        surf_args="${surf_args} -n"
+    fi
     for url in "$@"; do
         case "${browser}" in
-            s) x_www_app_run surf -m -a A -b -d -S -t "${url}"        ;;
-            g) x_www_app_run google-chrome --incognito --app="${url}" >/dev/null 2>&1;;
+            s) x_www_app_run surf -m -a A -b ${surf_args} -S -t "${url}" ;;
+            g) x_www_app_run google-chrome --incognito --app="${url}"    ;;
         esac
     done        
 }
 x_www_app_run() {
     local pid=''
     case "${WWW_APP_FORK}" in
-        p)  "$@" >&2 &
-            sleep 1
+        p)  "$@" >/dev/null 2>&1 &
+            echo "Type enter once the window loaded." >&2
+            read ign
             xdotool search --pid="$!" | tail -n 1
             ;;
-        v)  "$@" >&2 &
-            sleep 1
+        v)  "$@" >/dev/null 2>&1 &
+            echo "Type enter once the window loaded." >&2
+            read ign
             WINID="`xdotool search --pid="$!" | tail -n 1`"
             test -n "${WINID}"
             ;;

@@ -54,4 +54,4 @@ xwinsel() {
     fi
     
 }
-hmain -f "xwinsel" -r "xdotool" -e xwinsel -p "$@"
+hmain -f "xwinsel" -r "xdotool" xwinsel "$@"

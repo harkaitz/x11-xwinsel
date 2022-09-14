@@ -24,7 +24,7 @@
 #L:  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 #L:  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ##:
-#h: Usage: xshot [-n NAME][-l][-r][-i|v[a]
+#h: Usage: xshot [-n NAME][-l][-r][-i|v[a][-w WINID]
 #h:                   |    |   |   | | '------- With Audio
 #h:    Name the captures   |   |   | '------- Record video
 #h:                        |   |   '------- Take an screenshot
@@ -40,7 +40,7 @@
 xshot() {
     ## Parse options.
     local OPTIND optopt n l t f='' name='xshot' list='' remove='' fmt='' no_sound='y'
-    while getopts "n:lriva" optopt; do
+    while getopts "n:lrivaw:" optopt; do
         case $optopt in
             n)  name="${OPTARG}";;
             l)  list=y;;
@@ -48,6 +48,7 @@ xshot() {
             i)  fmt=".png";;
             v)  fmt=".gif";;
             a)  no_sound="";;
+            w)  local WINID="${OPTARG}";;
             \?) return 1;;
         esac
     done
@@ -78,16 +79,21 @@ xshot() {
     ## Take screenshot.
     case "${f}" in
         *.png) t="`mktemp -u`.xwd"
-               xdotool mousemove --window "${WINID}" 200 200
+               xdotool mousemove --window "${WINID}" 20 20
                find-cursor -c blue
                sleep 3
-               xwd -nobdrs -out "${t}" -id "${WINID}" >&2
-               find-cursor -c red
-               convert "${t}" "${f}"
+               if false; then
+                   xwd -nobdrs -out "${t}" -id "${WINID}" >&2
+                   find-cursor -c red
+                   convert "${t}" "${f}"
+               else
+                   scrot -o -p -u "${f}"
+                   find-cursor -c red
+               fi
                echo "${f}"
                ;;
         *.gif) t="`mktemp -u`.ogv"
-               xdotool mousemove --window "${WINID}" 200 200
+               xdotool mousemove --window "${WINID}" 20 20
                l="`xmenu <<-EOF
 		Start recording (CTRL-c) to finish.	start
 		Abort.	abort

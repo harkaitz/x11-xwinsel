@@ -42,7 +42,7 @@ x-www-app
 
 xshot
 
-    Usage: xshot [-n NAME][-l][-r][-i|v[a]
+    Usage: xshot [-n NAME][-l][-r][-i|v[a][-w WINID]
                       |    |   |   | | '------- With Audio
        Name the captures   |   |   | '------- Record video
                            |   |   '------- Take an screenshot
