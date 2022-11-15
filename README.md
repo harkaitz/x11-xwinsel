@@ -1,4 +1,4 @@
-# HTOOLCHAIN-DEMOS
+# X11-XWINSEL
 
 Demostration recording programs for X11.
 
